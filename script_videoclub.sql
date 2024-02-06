@@ -678,12 +678,54 @@ select distinct tv.titulo, g.id, d.id, tv.sinopsis from tmp_videoclub tv
 inner join generos g on g.nombre = tv.genero 
 inner join directores d on d.nombre = tv.director;
 
+INSERT INTO peliculas (titulo, id_genero, id_director, sinopsis)
+VALUES 
+('El lobo de Wall Street', 6, 44, 'La historia del corredor de bolsa neoyorquino Jordan Belfort, quien, con poco más de veinte años, fue apodado "el lobo de Wall Street" por su enorme éxito y fortuna como fundador de la agencia bursátil Stratton Oakmont.'),
+('Kill Bill', 1, 59, 'Mamba Negra es una asesina que, el día de su boda, es atacada por los miembros de la banda de su jefe, Bill. Sin embargo consigue sobrevivir, aunque queda en coma. Cinco años después despierta, con un deseo de venganza.');
+
 insert into copias
 select distinct tv.id_copia, p.id  from tmp_videoclub tv  
 inner join peliculas p on p.titulo = tv.titulo;
+
+insert into copias
+values (309, 101),
+(310, 101),
+(311, 102),
+(312, 102),
+(313, 102);
 
 insert into prestamos (id_copia, id_socio, fecha_prestamo, fecha_devolucion)
 select tv.id_copia, s.id, tv.fecha_alquiler, tv.fecha_devolucion  from tmp_videoclub tv
 inner join socios s on s.dni = tv.dni
 order by tv.fecha_alquiler;
+
+-- CONSULTA PELÍCULAS DISPONIBLES
+
+select consulta_final.nom_peli, consulta_final.copias_disponibles
+from (
+	select 
+	    subconsulta.nom_peli, 
+	    subconsulta.num_copias_peli - subconsulta2.num_pelis_alquiladas as copias_disponibles
+	from (
+	    select 
+	        p.titulo as nom_peli, 
+	        count(distinct c.id) as num_copias_peli
+	    from copias c
+	    inner join peliculas p on p.id = c.id_pelicula 
+	    group by p.titulo
+	) as subconsulta
+	inner join (
+	    select 
+	        p2.titulo as nom_peli, 
+	        count(distinct p.id_copia) as num_pelis_alquiladas
+	    from prestamos p
+	    right join copias c on c.id = p.id_copia 
+	    right join peliculas p2 on p2.id = c.id_pelicula
+	    where p.fecha_devolucion is null
+	    group by p2.titulo
+	) as subconsulta2 on subconsulta.nom_peli = subconsulta2.nom_peli
+) as consulta_final
+where consulta_final.copias_disponibles > 0;
+
+
 
