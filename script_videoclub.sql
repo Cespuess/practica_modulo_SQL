@@ -727,5 +727,29 @@ from (
 ) as consulta_final
 where consulta_final.copias_disponibles > 0;
 
+-- CONSULTA OPCIONAL (GÉNEROS PREFERIDOS DE CADA CLIENTE)
+
+select distinct consulta_final.nombre, consulta_final.apellidos, subconsulta2.genero  
+from(
+	select subconsulta.id_socio, subconsulta.nombre, subconsulta.apellidos, max(subconsulta.cuenta_generos) as max_generos
+	from(
+		select distinct p.id_socio as id_socio, s.nombre as nombre, s.apellidos as apellidos, g.nombre as genero, count(g.nombre) as cuenta_generos from prestamos p 
+		inner join socios s on s.id = p.id_socio
+		inner join copias c on c.id = p.id_copia 
+		inner join peliculas p2 on p2.id = c.id_pelicula 
+		inner join generos g on g.id  = p2.id_genero
+		group by p.id_socio, s.nombre, s.apellidos, g.nombre 
+	) as subconsulta
+	group by subconsulta.id_socio, subconsulta.nombre, subconsulta.apellidos
+	) as consulta_final
+	inner join (
+		select distinct p.id_socio as id_socio, s.nombre as nombre, s.apellidos as apellidos, g.nombre as genero, count(g.nombre) as cuenta_generos from prestamos p 
+		inner join socios s on s.id = p.id_socio
+		inner join copias c on c.id = p.id_copia 
+		inner join peliculas p2 on p2.id = c.id_pelicula 
+		inner join generos g on g.id  = p2.id_genero
+		group by p.id_socio, s.nombre, s.apellidos, g.nombre
+	) as subconsulta2 on consulta_final.id_socio = subconsulta2.id_socio
+where subconsulta2.cuenta_generos = consulta_final.max_generos;
 
 
